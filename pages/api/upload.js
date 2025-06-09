@@ -1,4 +1,3 @@
-
 import { OpenAI } from 'openai';
 import formidable from 'formidable';
 import fs from 'fs';
@@ -24,8 +23,12 @@ export default async function handler(req, res) {
     const { files } = await parseForm(req);
     const audioFile = files.file;
 
+    // ✅ Fix: Read file as buffer instead of stream
+    const fileBuffer = fs.readFileSync(audioFile.path);
+
     const transcription = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(audioFile.path),
+      file: fileBuffer,
+      filename: audioFile.originalFilename,
       model: "whisper-1",
     });
 
@@ -46,7 +49,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({ summary: gptResponse.choices[0].message.content });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Upload API error:', err);
+    res.status(500).json({ error: "Error summarizing the meeting" });
   }
 }
