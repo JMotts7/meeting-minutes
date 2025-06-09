@@ -16,8 +16,8 @@ async function parseForm(req) {
   return new Promise((resolve, reject) => {
     const form = formidable({ uploadDir: '/tmp', keepExtensions: true });
     form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
+      if (err) return reject(err);
+      resolve({ fields, files });
     });
   });
 }
@@ -29,7 +29,8 @@ export default async function handler(req, res) {
 
   try {
     const { files } = await parseForm(req);
-const audioFile = files.file;
+    const audioFile = files.file;
+
     const transcription = await openai.audio.transcriptions.create({
       file: fs.createReadStream(audioFile.filepath),
       model: 'whisper-1',
@@ -49,6 +50,11 @@ const audioFile = files.file;
         },
       ],
       temperature: 0.5,
-    };
+    });
 
-res.status(200).json({ summary: gptResponse.choices[0].message.content });
+    res.status(200).json({ summary: gptResponse.choices[0].message.content });
+  } catch (err) {
+    console.error('Upload handler error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
