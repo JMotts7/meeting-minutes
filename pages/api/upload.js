@@ -1,6 +1,6 @@
-import { OpenAI } from 'openai';
-import * as formidable from 'formidable';
-import fs from 'fs';
+const { OpenAI } = require('openai');
+const formidable = require('formidable');
+const fs = require('fs');
 
 export const config = {
   api: {
@@ -16,8 +16,8 @@ async function parseForm(req) {
   return new Promise((resolve, reject) => {
     const form = formidable({ uploadDir: '/tmp', keepExtensions: true });
     form.parse(req, (err, fields, files) => {
-      if (err) return reject(err);
-      resolve({ fields, files });
+      if (err) reject(err);
+      else resolve({ fields, files });
     });
   });
 }
@@ -52,9 +52,11 @@ export default async function handler(req, res) {
       temperature: 0.5,
     });
 
-    res.status(200).json({ summary: gptResponse.choices[0].message.content });
+    res
+      .status(200)
+      .json({ summary: gptResponse.choices[0].message.content });
   } catch (err) {
-    console.error('Upload handler error:', err);
+    console.error('API error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
