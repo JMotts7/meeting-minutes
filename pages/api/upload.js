@@ -23,14 +23,18 @@ export default async function handler(req, res) {
     const { files } = await parseForm(req);
     const audioFile = files.file;
 
-    // ✅ Fix: Read file as buffer instead of stream
-    const fileBuffer = fs.readFileSync(audioFile.path);
-
+    console.log("Uploading file to OpenAI Whisper...");
     const transcription = await openai.audio.transcriptions.create({
-      file: fileBuffer,
-      filename: audioFile.originalFilename,
+      file: fs.createReadStream(audioFile.filepath || audioFile.path),
       model: "whisper-1",
     });
+
+    if (!transcription.text) {
+      console.error("Transcription failed:", transcription);
+      return res.status(500).json({ error: "Failed to transcribe audio." });
+    }
+
+    console.log("Transcription complete. Text:", transcription.text);
 
     const gptResponse = await openai.chat.completions.create({
       model: "gpt-4-1106-preview",
@@ -47,9 +51,12 @@ export default async function handler(req, res) {
       temperature: 0.5,
     });
 
-    res.status(200).json({ summary: gptResponse.choices[0].message.content });
+    const summary = gptResponse.choices?.[0]?.message?.content || "";
+    console.log("GPT summary generated:", summary);
+
+    res.status(200).json({ summary });
   } catch (err) {
-    console.error('Upload API error:', err);
-    res.status(500).json({ error: "Error summarizing the meeting" });
+    console.error("Unexpected error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 }
