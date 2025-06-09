@@ -49,6 +49,6 @@ const audioFile = files.file;
         },
       ],
       temperature: 0.5,
-    });
+    };
 
 res.status(200).json({ summary: gptResponse.choices[0].message.content });
