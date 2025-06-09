@@ -1,5 +1,5 @@
 import { OpenAI } from 'openai';
-import formidable from 'formidable';
+import * as formidable from 'formidable';
 import fs from 'fs';
 
 export const config = {
@@ -29,8 +29,7 @@ export default async function handler(req, res) {
 
   try {
     const { files } = await parseForm(req);
-    const audioFile = files.file;
-
+const audioFile = files.file;
     const transcription = await openai.audio.transcriptions.create({
       file: fs.createReadStream(audioFile.filepath),
       model: 'whisper-1',
@@ -52,9 +51,4 @@ export default async function handler(req, res) {
       temperature: 0.5,
     });
 
-    res.status(200).json({ summary: gptResponse.choices[0].message.content });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-}
+res.status(200).json({ summary: gptResponse.choices[0].message.content });
